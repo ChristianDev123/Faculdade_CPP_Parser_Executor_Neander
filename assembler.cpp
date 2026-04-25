@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <regex>
+#include <unordered_map>
+
 
 using namespace std;
 
@@ -50,21 +52,30 @@ std::vector<Symbol> symbol_table(std::vector<std::string> code){
     return response;
 }
 
+
+std::unordered_map<string, int> enum_operations {
+    {"NOP", 0},
+    {"STA", 10},
+    {"LDA", 20},
+    {"ADD", 30},
+    {"OR", 50},
+    {"AND", 60},
+    {"NOT", 70},
+    {"JMP", 80},
+    {"JN", 90},
+    {"JZ", 0xA0},
+    {"HLT", 0xF0}
+};
+
 int main(){
     std::vector<std::string> buffer_code;
+    std::vector<Symbol> sym_table;
     std::ifstream source_code("code.asm");
     if(!source_code) return EXIT_FAILURE;
     read_file(source_code, buffer_code);
     source_code.close();
-    symbol_table(buffer_code);
-    for(auto symbol : symbol_table(buffer_code)){
-        std::cout << "=========================================" << std::endl;
-        std::cout << symbol.name << std::endl;
-        std::cout << symbol.mem_add << std::endl;
-        std::cout << symbol.size << std::endl;
-        std::cout << symbol.value << std::endl;
-        std::cout << "=========================================" << std::endl;
-    }
+    
+    sym_table = symbol_table(buffer_code);
 
     
     return EXIT_SUCCESS;
