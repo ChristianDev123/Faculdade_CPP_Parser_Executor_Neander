@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <cctype>
+#include <iomanip>
 
 using namespace std;
 
@@ -26,7 +27,6 @@ class Symbol {
 class Command {
     public:
         int opcode;
-        int mem_add;
         int arg = 0;
 };
 
@@ -130,7 +130,6 @@ std::vector<Command> translate_text(std::vector<std::string> code, std::vector<S
         Command c;
         if(std::regex_search(code[i],pattern1)){// em caso de label aponta para o proximo endereço de memória
             c.opcode = enum_operations["NOP"];
-            c.mem_add = mem_add + 1;
             response.push_back(c);
             continue;
         }
@@ -146,7 +145,6 @@ std::vector<Command> translate_text(std::vector<std::string> code, std::vector<S
         }
         
         c.opcode = enum_operations[string_to_upper(match[1].str())];
-        c.mem_add = mem_add++;
         if(std::find(cmd_arg_implicit.begin(), cmd_arg_implicit.end(), string_to_upper(match[1].str())) == cmd_arg_implicit.end()){ // caso de comandos com argumentos explicitos
             if(match[3].matched){// argumento sem a estrutura [abc..]
                 for(auto& sym : symbol_table){
@@ -166,8 +164,8 @@ std::vector<Command> translate_text(std::vector<std::string> code, std::vector<S
                 }                
                 c.arg = sum_addrs(calc);
             }
-            response.push_back(c);
         }
+        response.push_back(c);
     }
     return response;
 }
@@ -176,6 +174,7 @@ int main(){
     std::vector<std::string> buffer_code;
     std::vector<Symbol> sym_table;
     std::ifstream source_code("code.asm");
+    std::ofstream output_exec("output.nexe");
     std::vector<Command> translated_cmd_list;
     
     if(!source_code) return EXIT_FAILURE;
@@ -184,12 +183,14 @@ int main(){
     
     sym_table = symbol_table(buffer_code);
     translated_cmd_list = translate_text(buffer_code, sym_table);
-    for(auto& cmd : translated_cmd_list){
-        std::cout << "==================" << std::endl;
-        std::cout << "Comando: " << cmd.opcode << std::endl;
-        std::cout << "arg: " << cmd.arg << std::endl;
-        std::cout << "mem_addrs: " << cmd.mem_add << std::endl;
-        std::cout << "==================" << std::endl;
+    if(output_exec.is_open()){
+        output_exec << std::setfill('0');
+        for(auto& cmd : translated_cmd_list){
+            output_exec << std::hex << std::uppercase << std::setw(2) << cmd.opcode;
+            output_exec << std::hex << std::uppercase << std::setw(2) << cmd.arg;
+            output_exec << " ";
+        }
+        output_exec.close();
     }
     return EXIT_SUCCESS;
 }
