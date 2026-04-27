@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cctype>
 #include <iomanip>
+#include <cstdint>
 
 using namespace std;
 
@@ -174,7 +175,7 @@ int main(){
     std::vector<std::string> buffer_code;
     std::vector<Symbol> sym_table;
     std::ifstream source_code("code.asm");
-    std::ofstream output_exec("output.nexe");
+    std::ofstream output_exec("output.nexe", std::ios::out | std::ios::binary);// as flags informam que queremos salvar os binários do arquivo e não um texto
     std::vector<Command> translated_cmd_list;
     
     if(!source_code) return EXIT_FAILURE;
@@ -186,9 +187,10 @@ int main(){
     if(output_exec.is_open()){
         output_exec << std::setfill('0');
         for(auto& cmd : translated_cmd_list){
-            output_exec << std::hex << std::uppercase << std::setw(2) << cmd.opcode;
-            output_exec << std::hex << std::uppercase << std::setw(2) << cmd.arg;
-            output_exec << " ";
+            uint8_t op = static_cast<uint8_t>(cmd.opcode);
+            output_exec.write(reinterpret_cast<char*>(&op), 2);            
+            uint8_t arg = static_cast<uint8_t>(cmd.arg);
+            output_exec.write(reinterpret_cast<char*>(&arg), 2);
         }
         output_exec.close();
     }
