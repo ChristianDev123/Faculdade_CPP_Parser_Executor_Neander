@@ -100,9 +100,7 @@ int sum_addrs(std::string s){
 
 std::vector<Command> translate_text(std::vector<std::string> code, std::vector<Symbol> symbol_table){
     std::vector<Command> response;
-    int 
-        data_index = 0,
-        mem_add = 0;
+    int data_index = 0;
     
     for(auto& line : code){
         if(string_to_upper(line).find(".TEXT") != std::string::npos) break;
@@ -140,7 +138,9 @@ std::vector<Command> translate_text(std::vector<std::string> code, std::vector<S
         }
         
         if(string_to_upper(match[1].str()).find("ORG") != std::string::npos){ // informado o início do algoritmo
-            mem_add = std::stoi(match[3].str());
+            c.opcode = enum_operations["JMP"];
+            c.arg = std::stoi(match[3].str());
+            response.push_back(c);
             continue;
         }
         
