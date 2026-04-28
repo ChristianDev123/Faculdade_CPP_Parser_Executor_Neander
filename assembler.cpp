@@ -171,27 +171,38 @@ std::vector<Command> translate_text(std::vector<std::string> code, std::vector<S
     return response;
 }
 
-int main(){
+int main(int argc, char*argv[]){
     std::vector<std::string> buffer_code;
     std::vector<Symbol> sym_table;
     std::ifstream source_code("code.asm");
-    std::ofstream output_exec("output.nexe", std::ios::out | std::ios::binary);// as flags informam que queremos salvar os binários do arquivo e não um texto
+    std::ofstream output_exec(argv[1], std::ios::out | std::ios::binary);// as flags informam que queremos salvar os binários do arquivo e não um texto
     std::vector<Command> translated_cmd_list;
     
+    unsigned char memory[256];
+    for(int i = 0; i < 256; i++)
+        memory[i] = 0x00;
+
     if(!source_code) return EXIT_FAILURE;
     read_file(source_code, buffer_code);
     source_code.close();
     
     sym_table = symbol_table(buffer_code);
     translated_cmd_list = translate_text(buffer_code, sym_table);
+    
+    int i = 0;
+    for(auto& cmd : translated_cmd_list){
+        unsigned char op = static_cast<uint8_t>(cmd.opcode);
+        unsigned char arg = static_cast<uint8_t>(cmd.arg);
+        memory[i++]=op;
+        memory[i++]=arg;
+    }
+    for(auto& data : sym_table){
+        memory[data.mem_add] = data.value;
+    }
+    
     if(output_exec.is_open()){
         output_exec << std::setfill('0');
-        for(auto& cmd : translated_cmd_list){
-            uint8_t op = static_cast<uint8_t>(cmd.opcode);
-            output_exec.write(reinterpret_cast<char*>(&op), 2);            
-            uint8_t arg = static_cast<uint8_t>(cmd.arg);
-            output_exec.write(reinterpret_cast<char*>(&arg), 2);
-        }
+        output_exec.write(reinterpret_cast<const char*>(memory), sizeof(memory));
         output_exec.close();
     }
     return EXIT_SUCCESS;
