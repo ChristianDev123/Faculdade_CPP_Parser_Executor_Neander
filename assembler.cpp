@@ -43,26 +43,55 @@ std::vector<Symbol> symbol_table(std::vector<std::string> code){
         mem_add = 255;
     /* Encontrando Diretiva de Dados*/
     for(auto&line : code){
-        if(string_to_upper(line).find(".DATA") != std::string::npos) break;
         data_index++;
+        if(string_to_upper(line).find(".DATA") != std::string::npos) break;
     }
     
     std::regex pattern(R"((\s*)(\w+)(\s+)(\w+)(\s+)(\d+)(\s*))");
-    std::smatch match;
+    std::regex pattern1(R"((^\s*)(\w+:)(\s*$))");
+    std::smatch match, match1;
+    Symbol s;
 
-    while(!std::regex_search(code[++data_index], std::regex(R"(\.([a-z,A-Z]*))")) && data_index < code.size()){
+    while(data_index < code.size()){
+        if(std::regex_search(code[data_index], std::regex(R"(\.([a-z,A-Z]*))")))
+            break;
         /* MATCH serve como um buffer de cada encontro das diretivas do regex, match[0] string com ocorrencia do regex */
         if(!std::regex_search(code[data_index], match, pattern))
             std::cerr << "[ERRO] Falha encontrada ao verificar a estrutura de diretiva!";
 
-        Symbol s;
         s.name = match[2];
         s.mem_add = mem_add;
         s.size = string_to_upper(match[4].str()) == "SPACE" ? std::stoi(match[6].str()) : 1;
         s.value = string_to_upper(match[4].str()) == "DATA" ? std::stoi(match[6].str()) : 0; 
         mem_add -= s.size;
+        data_index++;
         response.push_back(s);
     }
+    
+    data_index = 0;
+    mem_add = 0;
+    for(auto& line : code){
+        data_index++;
+        if(string_to_upper(line).find(".TEXT") != std::string::npos) break;
+    }
+
+    while(data_index < code.size()){
+        if(std::regex_search(code[data_index], std::regex(R"(\.([a-z,A-Z]*))")))
+            break;
+        
+        if(std::regex_search(code[data_index],match1,pattern1)){// em caso de label aponta para o proximo endereço de memória
+            std::string name = match1[2].str();
+            name.pop_back();
+            s.name = name;
+            s.mem_add = mem_add + 1;
+            s.size = 1;
+            s.value = 0;
+            response.push_back(s);
+        }
+        mem_add++;
+        data_index++;
+    }
+    
     return response;
 }
 
@@ -125,14 +154,11 @@ std::vector<Command> translate_text(std::vector<std::string> code, std::vector<S
             break;
         if(std::regex_replace(code[i], std::regex(R"(\s)"),"").empty()) /* valida linha vazia */
             continue;
-        
-        Command c;
-        if(std::regex_search(code[i],pattern1)){// em caso de label aponta para o proximo endereço de memória
-            c.opcode = enum_operations["NOP"];
-            response.push_back(c);
+        if(std::regex_search(code[i],pattern1))// em caso de definição de label pula para proxima instrução
             continue;
-        }
-        
+    
+        Command c;
+    
         if(!std::regex_search(code[i], match, pattern0)){ // verifica se os commandos estão seguindo um padrão esperado
             std::cerr << "[ERRO] Falha ao tentar ler o código em .text; código: " << code[i] << " linha:  " << i << std::endl;
             continue;
@@ -149,7 +175,9 @@ std::vector<Command> translate_text(std::vector<std::string> code, std::vector<S
         if(std::find(cmd_arg_implicit.begin(), cmd_arg_implicit.end(), string_to_upper(match[1].str())) == cmd_arg_implicit.end()){ // caso de comandos com argumentos explicitos
             if(match[3].matched){// argumento sem a estrutura [abc..]
                 for(auto& sym : symbol_table){
+                    bool comp = sym.name == match[3].str();
                     if(sym.name == match[3].str()){
+                        std::cout << sym.name << " " << sym.mem_add << std::endl;
                         c.arg = sym.mem_add;
                         break;
                     }

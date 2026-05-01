@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <thread>
 
 using namespace std;
 
@@ -32,17 +33,17 @@ class Instruction{
 void decode_execute(Instruction inst, std::vector<unsigned char> &mem,int &acc, int &pc, bool &n, bool &z){
     switch(inst.opcode){
         case 0x80:
-            pc = (int)inst.arg;
+            pc = inst.arg;
             break;
         case 0x10:
-            mem[inst.arg] = acc;
-            break;
+        mem[inst.arg] = acc;
+        break;
         case 0x20:
-            acc = mem[inst.arg];
-            break;
+        acc = mem[inst.arg];
+        break;
         case 0x30:
-            acc += mem[inst.arg];
-            break;
+        acc = (acc + (int)mem[inst.arg]) % 255;
+        break;
         case 0x50:
             acc = acc | mem[inst.arg];
             break;
@@ -51,7 +52,7 @@ void decode_execute(Instruction inst, std::vector<unsigned char> &mem,int &acc, 
             break;
         case 0x70:
             acc = ~acc;
-            n != n;
+            n = !n;
             break;
         case 0x90:
             if(n) pc=inst.arg;
@@ -87,21 +88,41 @@ int main(int argc, char* argv[]){
     }
 
     /* FASE DECODE E EXECUTE */
-    // std::cout << "============ ANTES =============" << std::endl;
-    // print_memory(simulated_mem);
+    std::cout << "============ ANTES =============" << std::endl;
+    print_memory(simulated_mem);
 
-    std::cout << std::hex          
+    // std::cout << std::hex          
+    //             << std::setw(2)      
+    //             << std::setfill('0') 
+    //             << static_cast<int>(instructions[16].arg)  
+    //             << std::endl;
+    // std::cout << std::hex          
+    //             << std::setw(2)      
+    //             << std::setfill('0') 
+    //             << static_cast<int>(instructions[17].arg)  
+    //             << std::endl;
+
+    // std::cout << std::hex          
+    //             << std::setw(2)      
+    //             << std::setfill('0') 
+    //             << static_cast<int>(instructions[18].arg)  
+    //             << std::endl;
+
+    while(pc < simulated_mem.size()){
+        if(instructions[pc].opcode == 0xF0) break;
+        std::cout << 
+            "|" << std::hex          
                 << std::setw(2)      
                 << std::setfill('0') 
-                << static_cast<int>(instructions[19].arg)  
-                << std::endl;
-
-    // while(pc < simulated_mem.size()){
-    //     if(instructions[pc].opcode == 0xF0) break;
-    //     std::cout << std::dec << pc << std::endl;
-    //     decode_execute(instructions[pc], simulated_mem, acc, pc, n, z);
-    //     pc++;
-    // }
+                << static_cast<int>(instructions[pc].opcode) << 
+            "|" << std::dec << pc <<
+            "|" << std::dec << acc <<
+            "|" << n << 
+            "|" << z << std::endl;
+        decode_execute(instructions[pc], simulated_mem, acc, pc, n, z);
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        pc++;
+    }
 
     // std::cout << "============ DEPOIS =============" << std::endl;
     // print_memory(simulated_mem);

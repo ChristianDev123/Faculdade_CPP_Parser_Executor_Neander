@@ -1,6 +1,6 @@
 GCC = g++
 
-all: assembly executor
+all: run_assembly run_executor
 
 run_executor:executor
 	./executor.o output.nexe

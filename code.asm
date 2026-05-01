@@ -27,7 +27,7 @@
         
         LDA counter
         ADD menos1
-        JZ floop
+        JZ
         STA counter
         JMP loop
 
